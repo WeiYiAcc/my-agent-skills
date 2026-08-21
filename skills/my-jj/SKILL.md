@@ -407,3 +407,18 @@ jj help -k <keyword>     # Search help by keyword
 ```
 
 jj has rich functionality (revsets, templates, custom aliases, conflict resolution, etc.) that you can explore via `jj help` and apply based on the situation. The official documentation is at https://jj-vcs.github.io/jj/.
+
+## 批量 git→jj 迁移
+
+社区无现成批量工具；单仓库就一条 `jj git init --colocate`（对脏工作区安全）。
+本 skill 自带脚本（2026-08-22 已把 ~/ghq 下 52 个仓库批量转换）：
+
+```sh
+~/.agents/skills/my-jj/scripts/jj-ify-all.sh [根目录...]
+# 默认扫描 ~/ghq/github.com/*/*：有 .git 无 .jj 才转换，并自动 track 远端 bookmark
+```
+
+注意：
+- 转换后 bookmark 名沿用 git 分支名（master/main），push 前确认 `jj bookmark list`
+- `.broken-bak` 之类的坏备份目录会失败，属预期
+- 幂等，重跑只处理新增的 git 仓库
