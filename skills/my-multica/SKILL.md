@@ -1,6 +1,6 @@
 ---
-description: >
 name: my-multica
+description: >
   Multica agent 平台的本机运维纪律 + Bub runtime 接入方案。
   涵盖：daemon 必须用 systemctl 管理（禁止 multica daemon start/restart）、
   掉线排查流程、bub-acp-server 接入（mcode 家族）、venv 补丁维护、

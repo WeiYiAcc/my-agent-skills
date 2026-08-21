@@ -1,6 +1,6 @@
 ---
-description: >
 name: my-agent-skills-distribution
+description: >
   Agent skill 跨 runner 分发方案选型与操作。从一个 git 仓库把 skills
   分发到各 coding agent 的全局位置（~/.claude/skills、~/.pi/agent/skills 等），
   同时支持项目级管理。触发场景：新增/同步 skill 到多个 agent、

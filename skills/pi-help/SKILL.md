@@ -1,4 +1,5 @@
 ---
+name: pi-help
 description: "Pi 编码代理的使用方法、命令、快捷键、配置参考手册。涵盖 pi-cli、pi-mono 项目结构、Skills 系统、Session 管理、扩展开发等。当用户询问如何使用 Pi 工具、配置 Pi、开发 Pi Skills、或查询 pi-mono 相关信息时使用。"
 ---
 # Pi Help — Pi CLI 快速参考手册
