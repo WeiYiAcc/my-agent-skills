@@ -41,6 +41,11 @@ service 已声明：代理（HTTPS_PROXY 经 VPS tailnet）、PATH 含 `~/.local
 4. 单个 runtime offline：`multica runtime list --output json` 看
    `runtime_profile_failure_reason`（多为 command not found → 检查 PATH 或 set-path）
 5. 改 profile 后要 `systemctl --user restart multica` 重新探测
+6. **agent 派发无声失败**：issue 指派后 daemon 无任何 task 日志 → 查
+   `multica agent get <id> --output json | grep runtime_id`，与
+   `multica runtime list` 里 online 实例比对。daemon 长时间离线后重启会注册
+   **新 runtime ID**，agent 的旧绑定不会自动迁移，需
+   `multica agent update <agent-id> --runtime-id <online-runtime-id>` 重绑。
 
 ## Bub runtime 接入
 
