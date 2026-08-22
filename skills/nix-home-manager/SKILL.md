@@ -1,6 +1,6 @@
 ---
 name: nix-home-manager
-description: 管理 Nix Home Manager 配置的标准操作流程。覆盖 WSL 本机和 RackNerd 服务器。安装/卸载包、home-manager switch、chezmoi push。禁止使用 nix-env -iA 安装包（会和 home-manager profile 冲突导致 OOM）。
+description: 管理 Nix Home Manager / System Manager 配置的标准操作流程。配置已仓库化（WeiYiAcc/home-manager + WeiYiAcc/my-system-manager），双机 clone + switch。禁止 nix-env -iA 安装包（会和 home-manager profile 冲突导致 OOM）。
 ---
 
 # Nix + Home Manager Skill
@@ -12,12 +12,14 @@ description: 管理 Nix Home Manager 配置的标准操作流程。覆盖 WSL �
 
 ## 多机配置
 
-| 机器 | 配置文件 | Flake target | 执行方式 |
-|---|---|---|---|
-| WSL 本机 | `~/home-manager/home_wsl.nix` | `weiyiacc@wsl` | 直接执行 |
-| RackNerd 服务器 | `~/home-manager/home_racknerd-f76a666.nix` | `weiyiacc@racknerd-f76a666` | SSH 远程执行 |
+**2026-08-22 起配置已仓库化，chezmoi 退出管理**（此前 chezmoi source/target + scp 流导致双机漂移）：
 
-两个配置文件都由 chezmoi 管理（`~/.local/share/chezmoi/home-manager/`）。
+| 仓库 | 内容 | 双机部署路径 |
+|---|---|---|
+| `github.com/WeiYiAcc/home-manager` | flake：`weiyiacc@wsl` + `weiyiacc@racknerd-f76a666` 两个 homeConfigurations | `~/home-manager`（git clone） |
+| `github.com/WeiYiAcc/my-system-manager` | flake：hosts class 驱动（wsl/vps），`nix run` 的 system-apply 入口 | `~/system-manager`（git clone） |
+
+改配置一律改仓库 → commit + push → 另一台机器 `git pull` 后 switch。**禁止再走 scp 单文件同步**——那就是漂移的根源。
 
 ## 标准流程（本机 WSL）
 
@@ -35,21 +37,21 @@ home-manager switch -b "backup_$(date +'%Y-%m-%dT%H_%M_%S')" --flake "$HOME/home
 ## 服务器流程（RackNerd）
 
 ```bash
-# 1. 本机编辑配置
-nvim ~/.local/share/chezmoi/home-manager/home_racknerd-f76a666.nix
+# 1. 拉取最新
+ssh -p 48722 weiyiacc@104.168.22.124 'bash -lc "cd ~/home-manager && git pull"'
 
-# 2. 同步到服务器
-ssh -p 48722 weiyiacc@104.168.22.124 "cat > ~/home-manager/home_racknerd-f76a666.nix" \
-  < ~/.local/share/chezmoi/home-manager/home_racknerd-f76a666.nix
+# 2. 用户层 switch（限核防 OOM）
+ssh -p 48722 weiyiacc@104.168.22.124 'bash -lc "home-manager switch -b backup_$(date +%m%d) \
+  --flake ~/home-manager#weiyiacc@racknerd-f76a666 --max-jobs 1 --cores 1"'
 
-# 3. 服务器上执行（限制资源，1.9G VPS 容易 OOM）
-ssh -p 48722 weiyiacc@104.168.22.124 'export PATH=$HOME/.nix-profile/bin:$PATH && \
-  home-manager switch -b "backup_$(date +%Y-%m-%dT%H.%M.%S)" \
-  --flake ~/home-manager#weiyiacc@racknerd-f76a666 --max-jobs 1 --cores 1'
+# 3. 系统层 apply（system-manager；sudoers 已是 NOPASSWD ALL，免密）
+ssh -p 48722 weiyiacc@104.168.22.124 'bash -lc "nix run ~/system-manager"'
 
 # 4. 验证
-ssh -p 48722 weiyiacc@104.168.22.124 "export PATH=\$HOME/.nix-profile/bin:\$PATH && which <cmd>"
+ssh -p 48722 weiyiacc@104.168.22.124 "bash -lc 'which <cmd> && <cmd> --version'"
 ```
+
+> VPS 的 system-apply 会校验 hostname 白名单（flake.nix hosts 表），未登记主机拒绝执行。
 
 ### 服务器 OOM 应急
 
@@ -66,14 +68,11 @@ ssh -p 48722 weiyiacc@104.168.22.124 "export PATH=\$HOME/.nix-profile/bin:\$PATH
 3. dry-run build（本机）或直接 switch（服务器）
 4. switch（带备份）
 5. 验证安装：`which <cmd> && <cmd> --version`
-6. 修改的是 chezmoi source（`~/.local/share/chezmoi/home-manager/`）还是 target（`~/home-manager/`）：
-   - **改 source 后**：`chezmoi apply ~/home-manager/home_wsl.nix` 让 target 生效，再 switch
-   - **改 target 后**（如程序改动）：`chezmoi add ~/home-manager/home_wsl.nix` 同步回 source
-7. chezmoi 提交推送（**jj 流程**）：
+6. 提交推送（git 流程）：
 ```bash
-cd ~/.local/share/chezmoi
-jj commit -m "chore(home-manager): add <pkg>"
-jj git push
+cd ~/home-manager
+git commit -am "chore(home-manager): add <pkg>" && git push
+# 另一台机器：git pull 后按上面流程 switch
 ```
 
 ## systemd user unit 管理
