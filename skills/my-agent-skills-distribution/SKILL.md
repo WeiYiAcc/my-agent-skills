@@ -55,3 +55,14 @@ npx skills update
 工作流与 chezmoi source/target 纪律同构：git 仓库 = source，
 canonical 副本与各 runner 目录 = 分发产物，永不手改 target。
 Pi 在支持列表（`-a pi`，全局路径 `~/.pi/agent/skills/`）。
+
+## 故障排查纪律（2026-08-23 补充）
+
+发现 `~/.pi/agent/skills/`（或任何 runner 目录）下出现**非符号链接的真实目录**时：
+
+1. 先假定分发流程被绕过（某个 agent / 工具直写了产物区），不要直接当独立 skill 处理
+2. 与 `~/.agents/skills/` canonical 副本 diff：一致 → 删真实目录改回 symlink；
+   不一致 → 先回溯差异来源（哪次写入、什么工具），确认内容归属后再决定收编进仓库还是删除
+3. 修复后回查是谁绕过了流程（文件 mtime、会话记录），堵住源头
+4. pi 会同时扫描 `~/.pi/agent/skills/` 和 `~/.agents/skills/` 两个用户级目录并按真实路径去重——
+   同名真实目录 + canonical 副本并存会报 skill collision 警告（案例：my-clash-config，2026-08-23）
