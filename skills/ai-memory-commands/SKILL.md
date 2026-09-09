@@ -172,3 +172,18 @@ pinned: true
 - body 始终以 `# Title` 开头
 - 不要传 `title` 参数（issue #67 的已知 bug）
 - 默认 `project` 和 `workspace` 留空（ai-memory 自动解析当前项目）
+
+## 网状写入约定（2026-09-10 定版，勿再丢失）
+
+多条相关记忆时**按主题拆页 + 双链互引**，不要挤成一个巨型页面：
+
+1. 拆页：总纲进 `decisions/<主题>.md`（pinned），事故进 `gotchas/`，架构进 `concepts/`
+2. 双链：每页 body 末尾用 `关联：[[path]]` + `[[path]]` 内链格式互指（path 省略 tier 前缀目录也可，搜索能命中）
+3. 跨项目通用知识同步 `ariadne_fact_upsert_fact`，fact 的 `related` 字段填对方 fact name，保持两库网状对齐
+4. 总纲页 pinned: true，作为主题入口
+
+## 直连 MCP（无 MCP 工具注入时的备用通道）
+
+ai-memory：`POST $AI_MEMORY_SERVER_URL/mcp`（Bearer $AI_MEMORY_AUTH_TOKEN，JSON-RPC tools/call，Accept 需带 text/event-stream）。
+ariadne-fact：`POST http://racknerd-f76a666.taila715da.ts.net:7735/mcp`（Bearer $ARIADNE_API_KEY，主机名必须带 -f76a666 后缀）。
+WSL 内 curl 记得 `--noproxy '*'`（tailnet 被本机代理劫持，见 gotchas/wsl-proxy-tailnet-blackhole）。
